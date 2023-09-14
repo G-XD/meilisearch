@@ -5,7 +5,6 @@ use std::future::{ready, Ready};
 use actix_web::dev::{self, Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::Error;
 use futures_util::future::LocalBoxFuture;
-use http::Method;
 use prometheus::HistogramTimer;
 
 pub struct RouteMetrics;
@@ -51,19 +50,17 @@ where
         let request_path = req.path();
         let is_registered_resource = req.resource_map().has_resource(request_path);
         if is_registered_resource {
-            let tasks_path = "/tasks";
-            let path = if request_path.starts_with(tasks_path) && req.method() == Method::GET {
-                tasks_path
-            } else {
-                request_path
-            };
-
             let request_method = req.method().to_string();
-            histogram_timer = Some(
-                crate::metrics::MEILISEARCH_HTTP_RESPONSE_TIME_SECONDS
-                    .with_label_values(&[&request_method, path])
+
+            let route = request_path.strip_prefix('/')
+                .and_then(|stripped| stripped.split('/').next());
+            if let Some(route) = route {
+                histogram_timer = Some(
+                    crate::metrics::MEILISEARCH_HTTP_RESPONSE_TIME_SECONDS
+                    .with_label_values(&[&request_method, format!("/{}", route).as_str()])
                     .start_timer(),
-            );
+                )
+            }
             crate::metrics::MEILISEARCH_HTTP_REQUESTS_TOTAL
                 .with_label_values(&[&request_method, request_path])
                 .inc();

@@ -41,7 +41,7 @@ lazy_static! {
     pub static ref MEILISEARCH_HTTP_RESPONSE_TIME_SECONDS: HistogramVec = register_histogram_vec!(
         "meilisearch_http_response_time_seconds",
         "Meilisearch HTTP response times",
-        &["method", "path"],
+        &["method", "route"],
         MEILISEARCH_HTTP_RESPONSE_TIME_CUSTOM_BUCKETS.to_vec()
     )
     .expect("Can't create a metric");
